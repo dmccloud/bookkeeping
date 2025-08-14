@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { api } from "@/trpc/react";
+import { Input } from "@/components/ui/input";
 
 export function LatestPost() {
   const [latestPost] = api.post.getLatest.useSuspenseQuery();
@@ -30,7 +31,7 @@ export function LatestPost() {
         }}
         className="flex flex-col gap-2"
       >
-        <input
+        <Input
           type="text"
           placeholder="Title"
           value={name}
