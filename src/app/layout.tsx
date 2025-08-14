@@ -4,6 +4,14 @@ import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "@/trpc/react";
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  UserButton,
+  ClerkProvider,
+} from "@clerk/nextjs";
+import { env } from "@/env";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -22,7 +30,23 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable}`}>
       <body>
-        <TRPCReactProvider>{children}</TRPCReactProvider>
+        <ClerkProvider
+          publishableKey={env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+          signInUrl={env.NEXT_PUBLIC_CLERK_SIGN_IN_URL}
+          signUpUrl={env.NEXT_PUBLIC_CLERK_SIGN_UP_URL}
+        >
+          <TRPCReactProvider>
+            <div className="flex w-full justify-end p-4">
+              <SignedOut>
+                <SignInButton mode="modal" />
+              </SignedOut>
+              <SignedIn>
+                <UserButton />
+              </SignedIn>
+            </div>
+            {children}
+          </TRPCReactProvider>
+        </ClerkProvider>
       </body>
     </html>
   );
