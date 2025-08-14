@@ -10,11 +10,55 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+model Transaction {
+    id           Int      @id @default(autoincrement())
+    userId       String
+    date         DateTime
+    description  String
+    amount       Decimal
+    categoryId   Int
+    category     Category @relation(fields: [categoryId], references: [id])
+    isFlagged    Boolean  @default(false)
+    flagReason   Json[]
+    duplicateKey String?
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+
+    @@index([userId])
+    @@index([userId, date])
+    @@index([userId, categoryId])
+    @@index([userId, duplicateKey])
+}
+
+model Category {
+    id          Int           @id @default(autoincrement())
+    name        String
+    createdAt   DateTime      @default(now())
+    updatedAt   DateTime      @updatedAt
+    Transaction Transaction[]
+    Rule        Rule[]
 
     @@index([name])
+}
+
+model Rule {
+    id               Int               @id @default(autoincrement())
+    userId           String
+    name             String
+    conditionType    RuleConditionType
+    conditionValue   String
+    actionCategoryId Int?
+    actionCategory   Category?         @relation(fields: [actionCategoryId], references: [id])
+    actionTag        String?
+    isActive         Boolean           @default(true)
+    createdAt        DateTime          @default(now())
+    updatedAt        DateTime          @updatedAt
+}
+
+enum RuleConditionType {
+    DESCRIPTION_CONTAINS
+    DESCRIPTION_EXACT
+    AMOUNT_EQUALS
+    AMOUNT_GREATER_THAN
+    AMOUNT_LESS_THAN
 }
