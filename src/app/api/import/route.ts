@@ -60,25 +60,33 @@ export async function POST(req: Request) {
     );
 
     if (categoryNames.length > 0) {
-      // Create missing categories; skipDuplicates relies on @unique(name)
       await db.category.createMany({
-        data: categoryNames.map((name) => ({ name })),
+        data: categoryNames.map((name) => ({
+          name,
+          nameNormalized: normalizeCategoryName(name),
+        })),
         skipDuplicates: true,
       });
     }
 
     // Load IDs for mapping name -> id
     const cats = categoryNames.length
-      ? await db.category.findMany({ where: { name: { in: categoryNames } } })
+      ? await db.category.findMany({
+          where: {
+            nameNormalized: { in: categoryNames.map(normalizeCategoryName) },
+          },
+        })
       : [];
-    const nameToId = new Map(cats.map((c) => [c.name, c.id] as const));
+    const nameToId = new Map(
+      cats.map((c) => [c.nameNormalized, c.id] as const),
+    );
 
     const toItems = validRows.map((r) => ({
       date: new Date(r.data.date).toISOString(),
       description: r.data.description ?? "",
       amount: Number(r.data.amount),
       categoryId: r.data.category
-        ? nameToId.get(r.data.category.trim())
+        ? nameToId.get(normalizeCategoryName(r.data.category))
         : undefined,
     }));
 
@@ -89,4 +97,8 @@ export async function POST(req: Request) {
     console.error(err);
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
+}
+
+function normalizeCategoryName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
 }

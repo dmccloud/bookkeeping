@@ -11,18 +11,18 @@ datasource db {
 }
 
 model Transaction {
-    id           Int      @id @default(autoincrement())
+    id           Int       @id @default(autoincrement())
     userId       String
     date         DateTime
     description  String
     amount       Decimal
-    categoryId   Int
-    category     Category @relation(fields: [categoryId], references: [id])
-    isFlagged    Boolean  @default(false)
+    categoryId   Int?
+    category     Category? @relation(fields: [categoryId], references: [id])
+    isFlagged    Boolean   @default(false)
     flagReason   Json[]
     duplicateKey String?
-    createdAt    DateTime @default(now())
-    updatedAt    DateTime @updatedAt
+    createdAt    DateTime  @default(now())
+    updatedAt    DateTime  @updatedAt
 
     @@index([userId])
     @@index([userId, date])
@@ -31,12 +31,13 @@ model Transaction {
 }
 
 model Category {
-    id          Int           @id @default(autoincrement())
-    name        String        @unique
-    createdAt   DateTime      @default(now())
-    updatedAt   DateTime      @updatedAt
-    Transaction Transaction[]
-    Rule        Rule[]
+    id             Int           @id @default(autoincrement())
+    name           String
+    nameNormalized String        @unique
+    createdAt      DateTime      @default(now())
+    updatedAt      DateTime      @updatedAt
+    Transaction    Transaction[]
+    Rule           Rule[]
 
     @@index([name])
 }

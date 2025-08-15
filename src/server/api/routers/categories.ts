@@ -16,7 +16,13 @@ export const categoriesRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.category.create({ data: { name: input.name } });
+      const name = input.name.trim();
+      const nameNormalized = normalizeCategoryName(name);
+      return ctx.db.category.upsert({
+        where: { nameNormalized },
+        update: {},
+        create: { name, nameNormalized },
+      });
     }),
 
   rename: protectedProcedure
@@ -27,9 +33,11 @@ export const categoriesRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const name = input.name.trim();
+      const nameNormalized = normalizeCategoryName(name);
       return ctx.db.category.update({
         where: { id: input.id },
-        data: { name: input.name },
+        data: { name, nameNormalized },
       });
     }),
 
@@ -42,3 +50,7 @@ export const categoriesRouter = createTRPCRouter({
       return { success: true };
     }),
 });
+
+function normalizeCategoryName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
