@@ -29,12 +29,11 @@ export default function TransactionsPage() {
   const bulkUpdate = api.transactions.bulkUpdateCategory.useMutation({
     onSuccess: () => {
       setSelectedIds([]);
-      listQuery.refetch();
+      void listQuery.refetch();
     },
   });
 
   const allSelectedOnPage = useMemo(() => {
-    console.log("DATA:", listQuery.data);
     const ids = listQuery.data?.items.map((t) => t.id) ?? [];
     return ids.length > 0 && ids.every((id) => selectedIds.includes(id));
   }, [listQuery.data, selectedIds]);
@@ -220,7 +219,7 @@ export default function TransactionsPage() {
             ? Math.max(
                 1,
                 Math.ceil(
-                  listQuery.data.total / (listQuery.data.pageSize || pageSize),
+                  listQuery.data.total / (listQuery.data.pageSize ?? pageSize),
                 ),
               )
             : "…"}
