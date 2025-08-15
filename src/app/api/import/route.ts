@@ -3,19 +3,23 @@ import Papa from "papaparse";
 import { z } from "zod";
 import { createCaller } from "@/server/api/root";
 import { createTRPCContext } from "@/server/api/trpc";
+import { db } from "@/server/db";
 
 const Row = z.object({
   date: z.string(),
-  description: z.string().default(""),
+  description: z
+    .string()
+    .default("")
+    .transform((v) => v ?? ""),
   amount: z.string(),
-  categoryId: z.string().optional(),
+  category: z.string().optional(),
 });
 
 export async function POST(req: Request) {
-  const caller = createCaller(
-    await createTRPCContext({ headers: req.headers }),
-  );
   try {
+    const caller = createCaller(
+      await createTRPCContext({ headers: req.headers }),
+    );
     const form = await req.formData();
     const file = form.get("file");
     if (!(file instanceof File)) {
@@ -32,30 +36,53 @@ export async function POST(req: Request) {
       );
     }
 
-    const rows = (parsed.data as any[])
-      .map((r) => Row.safeParse(r))
-      .filter((r) => r.success) as Array<{
-      success: true;
-      data: z.infer<typeof Row>;
-    }>;
+    const rawRows: unknown[] = Array.isArray(parsed.data) ? parsed.data : [];
+    const parsedRows = rawRows.map((r) => Row.safeParse(r));
+    // Filter out only successfully parsed rows from the CSV, discarding any that failed validation
+    const rows = parsedRows.filter(
+      (r): r is { success: true; data: z.infer<typeof Row> } => r.success,
+    );
 
-    console.log(rows);
+    // Discard rows with invalid date/amount
+    const validRows = rows.filter((r) => {
+      const dateOk = !Number.isNaN(new Date(r.data.date).getTime());
+      const amountOk = !Number.isNaN(Number(r.data.amount));
+      return dateOk && amountOk;
+    });
 
-    const toItems = rows.map(async (r) => {
-      const catId = await caller.categories.create({
-        name: r.data.categoryId ?? "Uncategorized",
+    // Gather unique category names from CSV
+    const categoryNames = Array.from(
+      new Set(
+        validRows
+          .map((r) => (r.data.category ?? "").trim())
+          .filter((n) => n.length > 0),
+      ),
+    );
+
+    if (categoryNames.length > 0) {
+      // Create missing categories; skipDuplicates relies on @unique(name)
+      await db.category.createMany({
+        data: categoryNames.map((name) => ({ name })),
+        skipDuplicates: true,
       });
-      return {
-        date: new Date(r.data.date).toISOString(),
-        description: r.data.description ?? "",
-        amount: Number(r.data.amount),
-        categoryId: catId.id!,
-      };
-    });
+    }
 
-    const result = await caller.transactions.createMany({
-      items: await Promise.all(toItems),
-    });
+    // Load IDs for mapping name -> id
+    const cats = categoryNames.length
+      ? await db.category.findMany({ where: { name: { in: categoryNames } } })
+      : [];
+    const nameToId = new Map(cats.map((c) => [c.name, c.id] as const));
+
+    const toItems = validRows.map((r) => ({
+      date: new Date(r.data.date).toISOString(),
+      description: r.data.description ?? "",
+      amount: Number(r.data.amount),
+      categoryId: r.data.category
+        ? nameToId.get(r.data.category.trim())
+        : undefined,
+    }));
+
+    const result = await caller.transactions.createMany({ items: toItems });
 
     return NextResponse.json(result);
   } catch (err) {

@@ -4,7 +4,8 @@ import { useState } from "react";
 import { api } from "@/trpc/react";
 
 export default function ReviewPage() {
-  const [page, setPage] = useState(1);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [page, _] = useState(1);
   const [pageSize] = useState(50);
 
   const flagged = api.transactions.list.useQuery({
@@ -25,7 +26,15 @@ export default function ReviewPage() {
       <section className="mb-8">
         <h2 className="mb-2 text-lg font-medium">Flagged</h2>
         <DataTable
-          data={flagged.data?.items ?? []}
+          data={
+            flagged.data?.items.map((t) => ({
+              id: t.id.toString(),
+              date: t.date.toISOString(),
+              description: t.description,
+              amount: Number(t.amount),
+              categoryId: t.categoryId?.toString() ?? null,
+            })) ?? []
+          }
           loading={flagged.isLoading}
           emptyText="No flagged transactions"
         />
@@ -34,7 +43,15 @@ export default function ReviewPage() {
       <section>
         <h2 className="mb-2 text-lg font-medium">Uncategorized</h2>
         <DataTable
-          data={uncategorized.data?.items ?? []}
+          data={
+            uncategorized.data?.items.map((t) => ({
+              id: t.id.toString(),
+              date: t.date.toISOString(),
+              description: t.description,
+              amount: Number(t.amount),
+              categoryId: t.categoryId?.toString() ?? null,
+            })) ?? []
+          }
           loading={uncategorized.isLoading}
           emptyText="No uncategorized transactions"
         />
@@ -48,7 +65,13 @@ function DataTable({
   loading,
   emptyText,
 }: {
-  data: any[];
+  data: {
+    id: string;
+    date: string;
+    description: string;
+    amount: number;
+    categoryId: string | null;
+  }[];
   loading: boolean;
   emptyText: string;
 }) {
@@ -71,16 +94,24 @@ function DataTable({
               </td>
             </tr>
           )}
-          {data.map((t) => (
-            <tr key={t.id} className="odd:bg-white/5">
-              <td className="p-2">{new Date(t.date).toLocaleDateString()}</td>
-              <td className="p-2">{t.description}</td>
-              <td className="p-2 tabular-nums">
-                {Number(t.amount).toFixed(2)}
-              </td>
-              <td className="p-2">{t.categoryId ?? "—"}</td>
-            </tr>
-          ))}
+          {data.map(
+            (t: {
+              id: string;
+              date: string;
+              description: string;
+              amount: number;
+              categoryId: string | null;
+            }) => (
+              <tr key={t.id} className="odd:bg-white/5">
+                <td className="p-2">{new Date(t.date).toLocaleDateString()}</td>
+                <td className="p-2">{t.description}</td>
+                <td className="p-2 tabular-nums">
+                  {Number(t.amount).toFixed(2)}
+                </td>
+                <td className="p-2">{t.categoryId ?? "—"}</td>
+              </tr>
+            ),
+          )}
           {!loading && data.length === 0 && (
             <tr>
               <td colSpan={4} className="p-4 text-center opacity-80">

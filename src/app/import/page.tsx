@@ -13,9 +13,24 @@ export default function ImportPage() {
     const form = new FormData();
     form.append("file", file);
     const res = await fetch("/api/import", { method: "POST", body: form });
-    const data = await res.json();
+    const data: {
+      prepared: number;
+      inserted: number;
+      skippedDuplicates: number;
+      flaggedCount: number;
+    } = (await res.json()) as {
+      prepared: number;
+      inserted: number;
+      skippedDuplicates: number;
+      flaggedCount: number;
+    };
     if (!res.ok) {
-      setSummary(`Error: ${data?.error ?? "Upload failed"}`);
+      // Try to extract error message from response, fallback to generic message
+      let errorMsg = "Upload failed";
+      if (data && typeof (data as { error?: unknown }).error === "string") {
+        errorMsg = (data as unknown as { error: string }).error;
+      }
+      setSummary(`Error: ${errorMsg}`);
       return;
     }
     setSummary(
