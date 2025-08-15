@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     const categoryNames = Array.from(
       new Set(
         validRows
-          .map((r) => (r.data.category ?? "").trim())
+          .map((r) => r.data.category!.trim())
           .filter((n) => n.length > 0),
       ),
     );

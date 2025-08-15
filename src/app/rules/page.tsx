@@ -23,6 +23,7 @@ export default function RulesPage() {
   const deleteRule = api.rules.delete.useMutation({
     onSuccess: () => rulesQuery.refetch(),
   });
+  const applyAll = api.rules.applyToUncategorized.useMutation();
 
   const [name, setName] = useState("");
   const [conditionType, setConditionType] = useState<
@@ -41,6 +42,15 @@ export default function RulesPage() {
 
       <div className="mb-6 rounded border border-white/20 p-4">
         <h2 className="mb-2 font-medium">Create Rule</h2>
+        <div className="mb-3 flex items-center gap-2">
+          <button
+            className="rounded border border-white/30 px-2 py-1 text-sm disabled:opacity-50"
+            onClick={() => applyAll.mutate()}
+            disabled={applyAll.isPending}
+          >
+            {applyAll.isPending ? "Applying…" : "Apply to Uncategorized"}
+          </button>
+        </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <input
             className="rounded border border-gray-300 bg-white px-3 py-2 text-sm text-black"

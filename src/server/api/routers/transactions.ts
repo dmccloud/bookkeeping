@@ -33,7 +33,7 @@ export const transactionsRouter = createTRPCRouter({
         where.categoryId = categoryId;
       }
       if (flagged !== undefined) where.isFlagged = flagged;
-      if (uncategorized) where.categoryId = { equals: undefined };
+      if (uncategorized) where.categoryId = null;
       if (search) where.description = { contains: search, mode: "insensitive" };
       if (dateFrom || dateTo)
         where.date = {
@@ -232,6 +232,16 @@ export const transactionsRouter = createTRPCRouter({
       const result = await ctx.db.transaction.updateMany({
         where: { id: { in: ids }, userId: ctx.auth.userId! },
         data: { categoryId },
+      });
+      return { count: result.count };
+    }),
+
+  unflagMany: protectedProcedure
+    .input(z.object({ ids: z.array(z.number().int().positive()).min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await ctx.db.transaction.updateMany({
+        where: { id: { in: input.ids }, userId: ctx.auth.userId! },
+        data: { isFlagged: false, flagReason: [] },
       });
       return { count: result.count };
     }),

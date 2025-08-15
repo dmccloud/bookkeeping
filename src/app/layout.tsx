@@ -36,14 +36,28 @@ export default function RootLayout({
           signUpUrl={env.NEXT_PUBLIC_CLERK_SIGN_UP_URL}
         >
           <TRPCReactProvider>
-            <div className="flex w-full justify-end p-4">
+            <header className="flex w-full items-center justify-between p-4">
+              <nav className="flex items-center gap-4 text-sm">
+                <a href="/transactions" className="hover:underline">
+                  Transactions
+                </a>
+                <a href="/import" className="hover:underline">
+                  Import
+                </a>
+                <a href="/rules" className="hover:underline">
+                  Rules
+                </a>
+                <a href="/review" className="hover:underline">
+                  Review
+                </a>
+              </nav>
               <SignedOut>
                 <SignInButton mode="modal" />
               </SignedOut>
               <SignedIn>
                 <UserButton />
               </SignedIn>
-            </div>
+            </header>
             {children}
           </TRPCReactProvider>
         </ClerkProvider>
